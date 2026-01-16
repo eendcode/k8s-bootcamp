@@ -1,0 +1,45 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: exercise
+---
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: pod-reader
+  namespace: exercise
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: exercise
+  name: pod-reader
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "watch", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: read-pods
+  namespace: exercise
+subjects:
+  - kind: ServiceAccount
+    name: pod-reader
+roleRef:
+  kind: Role
+  name: pod-reader
+  apiGroup: rbac.authorization.k8s.io
+---
+kind: Pod
+apiVersion: v1
+metadata:
+  name: debian-read-rights
+  namespace: exercise
+spec:
+  serviceAccountName: pod-reader
+  containers:
+    - name: debian
+      image: workshop/kubectl
+      imagePullPolicy: Never

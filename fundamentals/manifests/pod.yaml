@@ -1,0 +1,12 @@
+# fundamentals/manifests/pod.yaml
+kind: Pod
+apiVersion: v1
+metadata:
+  name: nginx
+  namespace: default
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.28-alpine
+      ports:
+        - containerPort: 80

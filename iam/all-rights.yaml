@@ -1,0 +1,35 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: exercise
+---
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: pod-god
+  namespace: exercise
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: god-pod
+subjects:
+  - kind: ServiceAccount
+    name: pod-god
+    namespace: exercise
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+---
+kind: Pod
+apiVersion: v1
+metadata:
+  name: debian-all-rights
+  namespace: exercise
+spec:
+  serviceAccountName: pod-god
+  containers:
+    - name: debian
+      image: workshop/kubectl
+      imagePullPolicy: Never

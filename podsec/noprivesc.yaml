@@ -1,0 +1,61 @@
+kind: Pod
+apiVersion: v1
+metadata:
+  name: kubectl-unrestricted
+  namespace: default
+spec:
+  containers:
+    - name: kubectl
+      image: workshop/kubectl
+      imagePullPolicy: Never
+
+---
+kind: Pod
+apiVersion: v1
+metadata:
+  name: kubectl-no-privesc
+  namespace: default
+spec:
+  containers:
+    - name: kubectl
+      image: workshop/kubectl
+      imagePullPolicy: Never
+      securityContext:
+        runAsUser: 1000
+        allowPrivilegeEscalation: false
+
+---
+kind: Pod
+apiVersion: v1
+metadata:
+  name: kubectl-full-lockdown
+  namespace: default
+spec:
+  containers:
+    - name: kubectl
+      image: workshop/kubectl
+      imagePullPolicy: Never
+      securityContext:
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+            - ALL
+
+---
+kind: Pod
+apiVersion: v1
+metadata:
+  name: kubectl-fail
+  namespace: default
+spec:
+  containers:
+    - name: kubectl
+      image: workshop/kubectl
+      imagePullPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        allowPrivilegeEscalation: false

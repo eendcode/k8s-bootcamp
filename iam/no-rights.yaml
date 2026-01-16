@@ -1,0 +1,16 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: exercise
+
+---
+kind: Pod
+apiVersion: v1
+metadata:
+  name: debian-no-rights
+  namespace: exercise
+spec:
+  containers:
+    - name: debian
+      image: workshop/kubectl
+      imagePullPolicy: Never
