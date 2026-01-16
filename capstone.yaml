@@ -1,0 +1,36 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: foothold
+  labels:
+    app.kubernetes.io/name: foothold
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubectl
+  namespace: foothold
+  labels:
+    app.kubernetes.io/name: kubectl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kubectl
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kubectl
+    spec:
+      containers:
+        - name: kubectl
+          image: workshop/kubectl
+          imagePullPolicy: Never
+---
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: gitea
+  labels:
+    app.kubernetes.io/name: gitea
+---

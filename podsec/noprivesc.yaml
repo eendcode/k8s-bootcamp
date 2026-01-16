@@ -8,6 +8,8 @@ spec:
     - name: kubectl
       image: workshop/kubectl
       imagePullPolicy: Never
+      securityContext:
+        privileged: true
 
 ---
 kind: Pod

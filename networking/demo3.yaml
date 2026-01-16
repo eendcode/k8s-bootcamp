@@ -1,0 +1,35 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: only-important
+  namespace: important-namespace
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress  # new!
+  ingress:
+  - from:
+    # allow traffic from other namespaces to port 80, if the namespaces are important
+    - namespaceSelector:
+        matchLabels:
+          my-domain.foo/importance: high
+    ports:
+    - protocol: TCP
+      port: 80
+
+  - from:
+    # allow everything from inside our namespace
+    - podSelector: {} 
+
+  egress:
+  - to:
+      # allow everything to other hosts in the same namespace 
+    - podSelector: {}
+  - to: 
+      # allow traffic to 10.101.13.200 on port tcp/443 
+    - ipBlock:
+        cidr: 10.101.13.200/32
+    ports:
+    - protocol: TCP
+      port: 443

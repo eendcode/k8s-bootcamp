@@ -1,0 +1,69 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: persistence
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: config-file
+  namespace: persistence
+data:
+  config.ini: |
+    pizza=calzone
+    pi > e
+---
+kind: Secret
+apiVersion: v1
+metadata:
+  name: secret-file
+  namespace: persistence
+stringData:
+  secret.txt: |
+    42
+---
+kind: Secret
+apiVersion: v1
+metadata:
+  name: secret-env
+  namespace: persistence
+stringData:
+  DB_PASSWORD: simsalabim
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubectl-2
+  namespace: persistence
+  labels:
+    app.kubernetes.io/name: kubectl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kubectl
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kubectl
+    spec:
+      containers:
+        - name: kubectl
+          image: workshop/kubectl
+          imagePullPolicy: Never
+          envFrom:
+          - secretRef:
+              name: secret-env
+          volumeMounts:
+          - name: config
+            mountPath: /etc/config.ini
+            subPath: config.ini
+          - name: secret-value
+            mountPath: /secrets/
+      volumes:
+        - name: config
+          configMap:
+            name: config-file
+        - name: secret-value
+          secret:
+            secretName: secret-file
