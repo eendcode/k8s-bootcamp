@@ -59,5 +59,6 @@ spec:
       image: workshop/kubectl
       imagePullPolicy: Never
       securityContext:
+        runAsUser: 1000
         runAsNonRoot: true
         allowPrivilegeEscalation: false

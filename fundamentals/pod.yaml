@@ -1,4 +1,4 @@
-# fundamentals/manifests/pod.yaml
+# fundamentals/pod.yaml
 kind: Pod
 apiVersion: v1
 metadata:
