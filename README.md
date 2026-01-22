@@ -1,5 +1,8 @@
 # k8s-bootcamp
 
+## Link naar de presentatie
+
+https://docs.google.com/presentation/d/1Shak6Hfx76PorFY6nTUB_iOLW55rvsDaaABazjFxXRE/edit?usp=sharing
 
 ## Benodigdheden
 
@@ -8,6 +11,6 @@
 - Git (om dit te klonen)
 - [Rancher Desktop](https://rancherdesktop.io/) - dit installeert kubernetes in een VM
 - [k9s](https://k9scli.io/) om een dashboard in je terminal te krijgen
-- [Istioctl](https://istio.io/latest/docs/ops/diagnostic-tools/istioctl/) 
+- [Istioctl](https://istio.io/latest/docs/ops/diagnostic-tools/istioctl/)
 
 > Let op: als je Windows gebruikt, heb je WSL nodig om Rancher Desktop te runnen. Gebruik https://github.com/istio/istio/releases om istioctl te downloaden.
