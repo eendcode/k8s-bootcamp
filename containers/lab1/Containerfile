@@ -1,0 +1,6 @@
+FROM alpine:3.4
+
+RUN apk add -U nmap
+
+COPY hoi.txt /hoi.txt
+

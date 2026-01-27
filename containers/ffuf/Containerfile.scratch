@@ -1,0 +1,17 @@
+FROM golang:alpine AS builder
+
+RUN apk add -U build-base git
+
+RUN git clone https://github.com/ffuf/ffuf /app
+
+WORKDIR /app
+
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /ffuf .
+
+# ------------------------------------------------
+
+FROM scratch
+
+COPY --from=builder /ffuf /
+
+ENTRYPOINT [ "/ffuf" ]

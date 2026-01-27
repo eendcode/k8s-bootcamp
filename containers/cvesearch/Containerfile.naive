@@ -1,0 +1,18 @@
+FROM alpine:latest AS gitcloner
+
+RUN apk add -U git
+
+RUN git clone https://github.com/cve-search/cve-search /app
+
+
+# -----------------------------------------------------------
+
+FROM python:3
+
+COPY --from=gitcloner /app /app
+
+WORKDIR /app
+
+RUN pip install -r requirements.txt
+
+CMD ["python3", "./web/index.py"]

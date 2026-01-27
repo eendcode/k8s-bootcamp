@@ -1,0 +1,34 @@
+FROM alpine:latest AS gitcloner
+
+RUN apk add -U git
+
+RUN git clone https://github.com/cve-search/cve-search /app
+
+
+# -----------------------------------------------------------
+
+FROM python:3.11 AS installer
+
+ENV PATH="/opt/venv/bin:$PATH"
+
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    build-essential
+
+# 3. Create the Virtual Environment
+RUN python -m venv /opt/venv
+
+# 4. Install your modules into the venv
+COPY --from=gitcloner /app/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# ------------------------------------------------------------
+
+FROM gcr.io/distroless/python3
+
+COPY --from=gitcloner /app /app
+COPY --from=installer /opt/venv /opt/venv
+
+ENV PATH="/opt/venv/bin:$PATH"
+ENV PYTHONPATH="/opt/venv/lib/python3.114/site-packages"
+
+CMD ["/app/web/index.py"]

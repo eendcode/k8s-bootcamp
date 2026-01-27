@@ -1,0 +1,17 @@
+FROM golang:alpine AS builder
+
+RUN apk add -U build-base git
+
+RUN git clone https://github.com/ffuf/ffuf /app
+
+WORKDIR /app
+
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /ffuf .
+
+# ------------------------------------------------
+
+FROM gcr.io/distroless/static-debian12:latest
+
+COPY --from=builder /ffuf /
+
+ENTRYPOINT [ "/ffuf" ]
