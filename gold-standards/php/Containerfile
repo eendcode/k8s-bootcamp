@@ -8,8 +8,7 @@ FROM dunglas/frankenphp:static-builder-musl AS builder
 # ENV PHP_EXTENSION_LIBS="libzip,zlib,bzip2,libpng,libwebp,libjpeg,freetype,icu,openssl,libxml2,curl,libedit,postgresql,sqlite,xz,zstd,nghttp3,ngtcp2,nghttp2,libssh2"
 
 ENV PHP_EXTENSIONS="filter,ctype,iconv,session,mysqli,pdo_mysql,pgsql,pdo_pgsql,sqlite3,pdo_sqlite,gd,intl,zip,opcache,bz2,redis,imagick,mbstring,bcmath,curl,exif"
-ENV PHP_EXTENSION_LIBS="libzip,zlib,bzip2,libpng,libwebp,libjpeg,freetype,icu,openssl,libxml2,curl,libedit,postgresql,sqlite,xz,zstd,nghttp2,nghttp3,libssh2"
-
+ENV PHP_EXTENSION_LIBS="libzip,zlib,bzip2,libpng,libwebp,libjpeg,freetype,icu,openssl,libxml2,curl,libedit,postgresql,sqlite,xz,zstd,nghttp2,nghttp3,ngtcp2,libssh2,libidn2"
 
 # This script runs a specialized Go build that bakes in Brotli, OpenSSL, etc.
 # WARNING: this step will burn through most of the github API rate limit (60/hour), so make sure you cache builds
@@ -22,7 +21,7 @@ FROM alpine
 # FROM scratch
 
 COPY --from=builder /go/src/app/dist/static-php-cli/buildroot/bin/frankenphp /frankenphp
-COPY --from=phpmyadmin /var/www/html /app/public
+COPY --from=phpmyadmin /var/www/html /app
 
 ENV PERSISTENT_RUNTIME_DEPS=""
 ENV PWD=/app
