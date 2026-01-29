@@ -1,0 +1,9 @@
+FROM nginx:alpine
+
+
+
+
+# Copy our nginx configuration
+COPY nginx.conf /etc/nginx.conf
+
+

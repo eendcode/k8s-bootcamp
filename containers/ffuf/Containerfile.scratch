@@ -14,4 +14,6 @@ FROM scratch
 
 COPY --from=builder /ffuf /
 
+USER 65532
+
 ENTRYPOINT [ "/ffuf" ]

@@ -1,0 +1,4 @@
+FROM dunglas/frankenphp
+
+COPY --from=phpmyadmin /var/www/html /app/public
+

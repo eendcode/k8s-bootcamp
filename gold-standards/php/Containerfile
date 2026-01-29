@@ -1,0 +1,43 @@
+FROM dunglas/frankenphp:static-builder-musl AS builder
+
+# Define the extensions you need for phpMyAdmin
+# ENV PHP_EXTENSIONS="mysqli,pdo_mysql,gd,intl,zip,opcache,bz2,zlib"
+# ENV PHP_EXTENSION_LIBS="zlib,brotli,watcher,libpng,libavif,bzip2,icu,openssl,libzip,nghttp3,ngtcp2,nghttp2,xz,zstd"
+
+# ENV PHP_EXTENSIONS="mysqli,pdo_mysql,pgsql,pdo_pgsql,sqlite3,pdo_sqlite,gd,intl,zip,opcache,bz2,redis,imagick,mbstring,bcmath,curl,exif"
+# ENV PHP_EXTENSION_LIBS="libzip,zlib,bzip2,libpng,libwebp,libjpeg,freetype,icu,openssl,libxml2,curl,libedit,postgresql,sqlite,xz,zstd,nghttp3,ngtcp2,nghttp2,libssh2"
+
+ENV PHP_EXTENSIONS="filter,ctype,iconv,session,mysqli,pdo_mysql,pgsql,pdo_pgsql,sqlite3,pdo_sqlite,gd,intl,zip,opcache,bz2,redis,imagick,mbstring,bcmath,curl,exif"
+ENV PHP_EXTENSION_LIBS="libzip,zlib,bzip2,libpng,libwebp,libjpeg,freetype,icu,openssl,libxml2,curl,libedit,postgresql,sqlite,xz,zstd,nghttp2,nghttp3,libssh2"
+
+
+# This script runs a specialized Go build that bakes in Brotli, OpenSSL, etc.
+# WARNING: this step will burn through most of the github API rate limit (60/hour), so make sure you cache builds
+RUN /go/src/app/build-static.sh
+
+# ----------------------------------------------------------------------
+
+
+FROM alpine
+# FROM scratch
+
+COPY --from=builder /go/src/app/dist/static-php-cli/buildroot/bin/frankenphp /frankenphp
+COPY --from=phpmyadmin /var/www/html /app/public
+
+ENV PERSISTENT_RUNTIME_DEPS=""
+ENV PWD=/app
+ENV SERVER_NAME=:80
+
+WORKDIR /app/public
+ENTRYPOINT ["/frankenphp", "php-server", "--root", "/app"]
+
+# FROM scratch
+
+# ENV PERSISTENT_RUNTIME_DEPS=""
+# ENV PWD=/app
+# ENV SERVER_NAME=:80
+
+# COPY --from=builder /go/src/app/dist/static-php-cli/buildroot/bin/frankenphp /frankenphp
+
+
+# WORKDIR /app

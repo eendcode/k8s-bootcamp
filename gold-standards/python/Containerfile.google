@@ -1,0 +1,29 @@
+# --- Stage 1: Build (The "Kitchen Sink") ---
+FROM python:3.11-slim-bookworm AS builder
+
+WORKDIR /build
+
+# Install dependencies into a specific folder
+# This is essentially what PyOxidizer tries to do, but using standard Pip
+RUN pip install --no-cache-dir --target /app/lib -r requirements.txt
+
+# Copy your source code
+COPY . /app/src
+
+# --- Stage 2: Run (The "Google Approach") ---
+# Use Google's distroless image: no shell, no package manager, just the C-runtime.
+# 'python3' version includes the interpreter but nothing else.
+FROM gcr.io/distroless/python3-debian12
+
+WORKDIR /app
+
+# Copy the pre-installed libs and your source
+COPY --from=builder /app/lib /app/lib
+COPY --from=builder /app/src /app/src
+
+# Point Python to your library folder
+ENV PYTHONPATH=/app/lib:/app/src
+
+# Run your entry point
+# Since we run: python3 ./web/index.py
+ENTRYPOINT ["python3", "/app/src/web/index.py"]

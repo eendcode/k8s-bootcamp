@@ -1,0 +1,40 @@
+FROM rust:1.93-bullseye AS builder
+
+RUN cargo install pyoxidizer
+
+# 2. Set up arguments for the repo you want to build
+ARG REPO_URL="https://github.com/cve-search/cve-search"
+# This is the python module to run when the binary starts (e.g., "myapp.main")
+ARG ENTRY_MODULE="app.main"
+
+WORKDIR /src
+
+# 3. Clone the repository
+RUN git clone ${REPO_URL} .
+
+# 4. Generate the PyOxidizer Config (Starlark) dynamically
+COPY pyoxidizer.bzl pyoxidizer.bzl
+
+
+RUN mkdir -p /src/pyo_build
+ENV TMPDIR=/src/pyo_build
+
+# 5. Build the binary
+# This downloads a portable Python distribution and compiles everything.
+RUN pyoxidizer build --release
+
+# -----------------------------------------------------------------------
+
+FROM scratch
+
+# Copy the static binary from the builder
+COPY --from=builder /src/build/*/release/exe/py-binary /app
+
+# Uncomment this if we don't need SSL certificates
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+
+# Drop privileges
+USER 65532
+
+# Run it!
+ENTRYPOINT ["/app"]
