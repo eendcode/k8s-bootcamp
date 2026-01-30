@@ -1,0 +1,40 @@
+FROM python:3.11-bookworm AS builder
+
+ENV PATH="/opt/venv/bin:$PATH"
+
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install --yes \
+    build-essential \
+    git \
+    python3-dev
+
+# Clone the app
+RUN git clone https://gitlab.com/invuls/pentest-projects/pcf /app
+
+# Upgrade build tools
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+
+# Install dependencies to a new folder
+RUN pip install --target=/install -r /app/requirements_unix.txt
+
+
+CMD ["python3", "run.py"]
+# ------------------------------------------------------------
+
+
+FROM gcr.io/distroless/python3-debian12
+
+# Copy the application code
+COPY --from=builder /app /app
+
+# Copy the dependencies we built earlier
+COPY --from=builder /install /usr/lib/python3.11/dist-packages
+
+# We do something rather dirty here -> we copy the .so files for libmagic
+COPY --from=builder /lib/x86_64-linux-gnu/libmagic* /lib/x86_64-linux-gnu
+COPY --from=builder /usr/lib/x86_64-linux-gnu/libmagic* /usr/lib/x86_64-linux-gnu
+
+WORKDIR /app
+
+USER 65532
+
+CMD ["run.py"]
