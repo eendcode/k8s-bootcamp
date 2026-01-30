@@ -1,42 +1,43 @@
 FROM dunglas/frankenphp:static-builder-musl AS builder
 
-# Define the extensions you need for phpMyAdmin
-# ENV PHP_EXTENSIONS="mysqli,pdo_mysql,gd,intl,zip,opcache,bz2,zlib"
-# ENV PHP_EXTENSION_LIBS="zlib,brotli,watcher,libpng,libavif,bzip2,icu,openssl,libzip,nghttp3,ngtcp2,nghttp2,xz,zstd"
-
-# ENV PHP_EXTENSIONS="mysqli,pdo_mysql,pgsql,pdo_pgsql,sqlite3,pdo_sqlite,gd,intl,zip,opcache,bz2,redis,imagick,mbstring,bcmath,curl,exif"
-# ENV PHP_EXTENSION_LIBS="libzip,zlib,bzip2,libpng,libwebp,libjpeg,freetype,icu,openssl,libxml2,curl,libedit,postgresql,sqlite,xz,zstd,nghttp3,ngtcp2,nghttp2,libssh2"
-
+# Define the extensions needed
 ENV PHP_EXTENSIONS="filter,ctype,iconv,session,mysqli,pdo_mysql,pgsql,pdo_pgsql,sqlite3,pdo_sqlite,gd,intl,zip,opcache,bz2,redis,imagick,mbstring,bcmath,curl,exif"
-ENV PHP_EXTENSION_LIBS="libzip,zlib,bzip2,libpng,libwebp,libjpeg,freetype,icu,openssl,libxml2,curl,libedit,postgresql,sqlite,xz,zstd,nghttp2,nghttp3,ngtcp2,libssh2,libidn2"
+ENV PHP_EXTENSION_LIBS="libzip,zlib,bzip2,libpng,libwebp,libjpeg,freetype,icu,openssl,libxml2,curl,libedit,postgresql,sqlite,xz,zstd,nghttp2,nghttp3,ngtcp2,libssh2"
 
-# This script runs a specialized Go build that bakes in Brotli, OpenSSL, etc.
+# We add libidn2 via apk
+RUN apk add --no-cache \
+    libidn2-dev \
+    libidn2-static
+
 # WARNING: this step will burn through most of the github API rate limit (60/hour), so make sure you cache builds
 RUN /go/src/app/build-static.sh
 
 # ----------------------------------------------------------------------
 
 
-FROM alpine
-# FROM scratch
+FROM scratch
 
 COPY --from=builder /go/src/app/dist/static-php-cli/buildroot/bin/frankenphp /frankenphp
+
+# Change this to your app
 COPY --from=phpmyadmin /var/www/html /app
 
 ENV PERSISTENT_RUNTIME_DEPS=""
 ENV PWD=/app
-ENV SERVER_NAME=:80
+ENV SERVER_NAME=:8000
 
-WORKDIR /app/public
-ENTRYPOINT ["/frankenphp", "php-server", "--root", "/app"]
+# We ensure that all temporary data, at least by frankenphp, will be written to /tmp
+ENV XDG_DATA_HOME=/tmp/data
+ENV XDG_CONFIG_HOME=/tmp/config
+VOLUME [ "/tmp" ]
 
-# FROM scratch
+# Specific to phpmyadmin
+VOLUME [ "/app/tmp" ]
 
-# ENV PERSISTENT_RUNTIME_DEPS=""
-# ENV PWD=/app
-# ENV SERVER_NAME=:80
+WORKDIR /app
 
-# COPY --from=builder /go/src/app/dist/static-php-cli/buildroot/bin/frankenphp /frankenphp
+# Some rando username
+USER 65532
 
+ENTRYPOINT ["/frankenphp", "php-server", "--root", "/app", "--listen", "0.0.0.0:8000", "--access-log"]
 
-# WORKDIR /app
