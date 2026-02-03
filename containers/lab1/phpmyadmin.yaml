@@ -1,0 +1,109 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: phpmyadmin-lab
+  labels:
+    app.kubernetes.io/name: phpmyadmin
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  namespace: phpmyadmin-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - name: mysql
+        image: mysql:9.6
+        env:
+          - name: MYSQL_ROOT_PASSWORD
+            value: rootpass
+          - name: MYSQL_DATABASE
+            value: phpmyadmin
+        ports:
+          - containerPort: 3306
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: phpmyadmin-lab
+spec:
+  selector:
+    app: mysql
+  ports:
+    - port: 3306
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: phpmyadmin
+  namespace: phpmyadmin-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: phpmyadmin
+  template:
+    metadata:
+      labels:
+        app: phpmyadmin
+    spec:
+      containers:
+      - name: phpmyadmin
+        image: workshop/phpmyadmin
+        imagePullPolicy: Never
+        env:
+          - name: PMA_ARBITRARY
+            value: "1"
+        ports:
+          - containerPort: 80
+        securityContext:
+          runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+              - ALL
+        volumeMounts:
+        - name: temp
+          mountPath: /var/www/html/tmp
+        - name: sessions
+          mountPath: /sessions
+        - name: etc-phpmyadmin-secret
+          mountPath: /etc/phpmyadmin/config.secret.inc.php
+          subPath: config.secret.inc.php
+        - name: etc-phpmyadmin-user
+          mountPath: /etc/phpmyadmin/config.user.inc.php
+          subPath: config.user.inc.php
+      volumes:
+      - name: temp
+        emptyDir: {}
+      - name: sessions
+        emptyDir: {}
+      - name: etc-phpmyadmin-secret
+        emptyDir: {}
+      - name: etc-phpmyadmin-user
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: phpmyadmin-web
+  namespace: phpmyadmin-lab
+spec:
+  selector:
+    app: phpmyadmin
+  ports:
+    - port: 80
+      targetPort: 80

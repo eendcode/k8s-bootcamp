@@ -1,0 +1,4 @@
+kind: Project
+apiVersion: hektor.private/v1
+metadata:
+  name: chat

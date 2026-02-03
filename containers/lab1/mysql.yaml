@@ -1,0 +1,21 @@
+kind: Pod
+apiVersion: v1
+metadata:
+  name: mysql
+  namespace: default
+spec:
+  containers:
+    - name: mysql
+      image: mysql
+      ports:
+        - name: mysql
+          containerPort: 3389
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+            - ALL

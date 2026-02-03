@@ -1,0 +1,15 @@
+FROM phpmyadmin/phpmyadmin:latest
+
+
+# Stap 1 -> zorg dat de applicatie niet als root draait
+# RUN chown -R 1001:1001 /var/www/ && chmod -R 755 /var/www/
+# RUN chown -R 1001:1001 /etc/phpmyadmin && chmod -R 755 /etc/phpmyadmin
+
+# Configure apache to run at port 8080
+RUN sed -i 's/Listen 80/Listen 8080/' /etc/apache2/ports.conf \
+ && sed -i 's/:80/:8080/' /etc/apache2/sites-enabled/000-default.conf
+
+EXPOSE 8080
+USER 1001
+
+

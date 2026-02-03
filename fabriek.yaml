@@ -1,0 +1,293 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: gitea
+  labels:
+    app.kubernetes.io/name: gitea
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitea-postgres
+  namespace: gitea
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gitea-postgres
+  template:
+    metadata:
+      labels:
+        app: gitea-postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15
+        env:
+        - name: POSTGRES_DB
+          value: gitea
+        - name: POSTGRES_USER
+          value: gitea
+        - name: POSTGRES_PASSWORD
+          value: gitea
+        ports:
+        - containerPort: 5432
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gitea-postgres
+  namespace: gitea
+spec:
+  selector:
+    app: gitea-postgres
+  ports:
+  - port: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitea
+  namespace: gitea
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gitea
+  template:
+    metadata:
+      labels:
+        app: gitea
+    spec:
+      containers:
+      - name: gitea
+        image: gitea/gitea:1.21
+        env:
+        - name: GITEA__database__DB_TYPE
+          value: postgres
+        - name: GITEA__database__HOST
+          value: gitea-postgres:5432
+        - name: GITEA__database__NAME
+          value: gitea
+        - name: GITEA__database__USER
+          value: gitea
+        - name: GITEA__database__PASSWD
+          value: gitea
+        - name: GITEA__server__ROOT_URL
+          value: http://localhost:3000
+        - name: GITEA_ADMIN_USERNAME
+          value: gitea-admin
+        - name: GITEA_ADMIN_PASSWORD
+          value: blablabla
+        - name: GITEA__webhook__ALLOWED_HOST_LIST
+          value: "*"
+        ports:
+        - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gitea
+  namespace: gitea
+spec:
+  selector:
+    app: gitea
+  ports:
+  - port: 3000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gitea
+  namespace: gitea
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+  rules:
+    - host: localhost
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: gitea
+                port:
+                  number: 3000
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: clone
+  namespace: gitea
+spec:
+  params:
+  - name: url
+  workspaces:
+  - name: src
+  steps:
+  - name: clone
+    image: alpine/git
+    script: |
+      git clone $(params.url) /workspace/src
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: build
+  namespace: gitea
+spec:
+  params:
+  - name: IMAGE
+    description: "Target image to push"
+  workspaces:
+  - name: src
+  steps:
+  - name: build
+    image: quay.io/buildah/stable:v1.32.0
+    securityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      allowPrivilegeEscalation: false
+      seccompProfile:
+        type: Unconfined      
+    script: |
+      #!/bin/sh
+      set -e
+      cd /workspace/src
+
+      echo "Starting Buildah build for image: $(params.IMAGE)"
+
+      # Build container
+      buildah bud \
+        --isolation=chroot \
+        --storage-driver vfs \
+        -t $(params.IMAGE) \
+        -f Containerfile .
+
+      # Push container to registry
+      buildah push --tls-verify=false $(params.IMAGE)
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: deploy
+  namespace: gitea
+spec:
+  workspaces:
+  - name: src
+  steps:
+  - name: apply
+    image: bitnami/kubectl
+    script: |
+      kubectl apply -f /workspace/src/k8s.yaml
+---
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: pr-pipeline
+  namespace: gitea
+spec:
+  params:
+  - name: repo
+  - name: PR_TITLE
+  workspaces:
+  - name: src
+  tasks:
+  - name: clone
+    taskRef: {name: clone}
+    params:
+    - name: url
+      value: $(params.repo)
+    workspaces:
+    - name: src
+      workspace: src
+
+  - name: build
+    runAfter: [clone]
+    taskRef: {name: build}
+    params:
+    - name: PR_TITLE
+      value: $(params.PR_TITLE)
+    workspaces:
+    - name: src
+      workspace: src
+
+  - name: deploy
+    runAfter: [build]
+    taskRef: {name: deploy}
+    workspaces:
+    - name: src
+      workspace: src
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerBinding
+metadata:
+  name: gitea-pr
+  namespace: gitea
+spec:
+  params:
+  - name: repo
+    value: $(body.pull_request.head.repo.clone_url)
+  - name: PR_TITLE
+    value: $(body.pull_request.title)
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: pr-template
+  namespace: gitea
+spec:
+  params:
+  - name: repo
+  - name: PR_TITLE
+  resourcetemplates:
+  - apiVersion: tekton.dev/v1
+    kind: PipelineRun
+    metadata:
+      generateName: pr-run-
+    spec:
+      pipelineRef:
+        name: pr-pipeline
+      params:
+      - name: repo
+        value: $(tt.params.repo)
+      - name: PR_TITLE
+        value: $(tt.params.PR_TITLE)
+      workspaces:
+      - name: src
+        emptyDir: {}
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: build-pipeline
+  namespace: gitea
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: pipeline-binding
+subjects:
+- kind: ServiceAccount
+  name: build-pipeline
+  namespace: gitea
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: ctf-pr-listener
+  namespace: gitea
+spec:
+  serviceAccountName: build-pipeline
+  triggers:
+  - name: gitea-pr
+    bindings:
+    - ref: gitea-pr-binding
+    template:
+      ref: pr-template

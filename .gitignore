@@ -35,3 +35,5 @@ go.work.sum
 *.key
 
 Containerfile.solution
+
+target/

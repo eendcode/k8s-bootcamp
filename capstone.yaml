@@ -3,6 +3,8 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: management-tools
+  labels:
+    pod-security.kubernetes.io/enforce: baseline
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -30,6 +32,7 @@ metadata:
 spec:
   podSelector: {}
   policyTypes:
+  - Ingress
   - Egress
   egress:
   - ports:
