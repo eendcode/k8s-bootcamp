@@ -3,6 +3,7 @@
 ## Link naar de presentatie
 
 https://docs.google.com/presentation/d/1Shak6Hfx76PorFY6nTUB_iOLW55rvsDaaABazjFxXRE/edit?usp=sharing
+https://docs.google.com/presentation/d/1d_zNLoxL5Xx-eafEEPtUi3C8kTkscT0uLHMfx5iAdyM/edit?usp=sharing
 
 ## Benodigdheden
 
