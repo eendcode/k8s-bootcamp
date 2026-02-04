@@ -1,29 +1,27 @@
-FROM python:3.11 AS builder
+FROM python:3.11-bookworm AS builder
 
 ENV PATH="/opt/venv/bin:$PATH"
 
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     build-essential \
-    git
+    git \
+    python3-dev
+
 
 RUN git clone https://github.com/cve-search/cve-search /app
 
-
-# 3. Create the Virtual Environment
-RUN python -m venv /opt/venv
-
-# 4. Install your modules into the venv
 WORKDIR /app
-RUN pip install --no-cache-dir -r requirements.txt
+
+
+RUN pip install --no-cache-dir --target=/install -r requirements.txt
 
 # ------------------------------------------------------------
 
-FROM gcr.io/distroless/python3
+FROM gcr.io/distroless/python3-debian12
 
 COPY --from=builder /app /app
-COPY --from=builder /opt/venv /opt/venv
+COPY --from=builder /install /usr/lib/python3.11/dist-packages
 
-ENV PATH="/opt/venv/bin:$PATH"
-ENV PYTHONPATH="/opt/venv/lib/python3.11/site-packages"
+USER 65532
 
 CMD ["/app/web/index.py"]

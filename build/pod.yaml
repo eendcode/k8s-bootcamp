@@ -7,6 +7,6 @@ metadata:
 spec:
   containers:
     - name: nginx
-      image: nginx:1.28-alpine
+      image: localhost:5000/kubectl
       ports:
         - containerPort: 80

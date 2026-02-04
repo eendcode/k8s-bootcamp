@@ -37,7 +37,7 @@ VOLUME [ "/app/tmp" ]
 WORKDIR /app
 
 # Some rando username
-USER 65532
+# USER 65532
 
 ENTRYPOINT ["/frankenphp", "php-server", "--root", "/app", "--listen", "0.0.0.0:8000", "--access-log"]
 
